@@ -4,6 +4,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <set>
 
 #include "projectds_app.hpp"
 
@@ -11,12 +12,22 @@
 #include "util/pfd.h"
 
 static void show_data_selection_dialog(ProjectDS& self) {
-    auto folder = pfd::select_folder("Select Death Stranding data folder!").result();
+    auto folder = pfd::select_folder("Select Horizon Zero Dawn Packed_DX12 folder").result();
 
     if (!folder.empty()) {
+
+        // Sort bin files alphabeticaly
+        std::set<std::filesystem::path> sortedArchiveNames;
         for (auto file : std::filesystem::directory_iterator(folder)) {
-            LOG("Loading archive ", file.path().stem().string());
-            int index = self.archive_array.load_archive(file.path().string());
+            // ignore Aloy's adjustments, it's causing issues with the prefetch
+            if(file.path().stem() != "Patch_AloysAdjustments")
+                sortedArchiveNames.insert(file.path());
+        }
+
+        // Iterate in reverse alphabetical order
+        for (auto it = sortedArchiveNames.rbegin(); it != sortedArchiveNames.rend(); ++it) {
+            LOG("Loading archive ", it->stem());
+            int index = self.archive_array.load_archive(it->string());
 
             // export hack hack
 			//if (file.path().filename() == "Patch.bin") {
