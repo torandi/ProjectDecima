@@ -8,13 +8,22 @@
 #include "utils.hpp"
 #include "decima/archive/archive_manager.hpp"
 
-void Decima::ArchiveManager::load_archive(const std::string& path) {
+int Decima::ArchiveManager::load_archive(const std::string& path) {
     auto& archive = manager.emplace_back(path);
     archive.open();
 
     for (const auto& entry : archive.content_table) {
-        hash_to_archive_index.emplace(entry.hash, static_cast<int>(manager.size() - 1));
+		hash_to_archive_index.emplace(entry.hash, static_cast<int>(manager.size() - 1));
     }
+
+    return static_cast<int>(manager.size() - 1);
+}
+
+
+inline bool ends_with(std::string const & value, std::string const & ending)
+{
+    if (ending.size() > value.size()) return false;
+    return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
 }
 
 void Decima::ArchiveManager::load_prefetch() {
@@ -26,7 +35,12 @@ void Decima::ArchiveManager::load_prefetch() {
     prefetch.parse(*this, buffer, nullptr);
 
     for (const auto& string : prefetch.paths.data()) {
+        std::string san = sanitize_name(string.data());
         hash_to_name.emplace(hash_string(sanitize_name(string.data()), seed), string.data());
+        if (ends_with(san, ".core")) {
+            std::string stream = san + ".stream";
+            hash_to_name.emplace(hash_string(sanitize_name(stream), seed), stream);
+        }
     }
 
     hash_to_name.emplace(0x2fff5af65cd64c0a, "prefetch/fullgame.prefetch");

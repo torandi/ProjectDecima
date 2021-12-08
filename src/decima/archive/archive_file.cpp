@@ -42,7 +42,7 @@ std::vector<char> unpack(const Decima::Archive& archive, const Decima::ArchiveFi
 
         return std::make_pair(
             archive.chunk_table.begin() + chunk_from_offset(first_chunk_offset),
-            archive.chunk_table.begin() + chunk_from_offset(last_chunk_offset) + 1);
+            archive.chunk_table.begin() + (chunk_from_offset(last_chunk_offset) + 1));
     }();
 
     auto decompressed_size = std::accumulate(chunk_entry_begin, chunk_entry_end, 0, [](const auto acc, const auto& item) {
