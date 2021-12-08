@@ -9,7 +9,7 @@
 namespace Decima {
     class ArchiveManager {
     public:
-        void load_archive(const std::string& path);
+        int load_archive(const std::string& path);
         void load_prefetch();
 
         [[nodiscard]] Decima::OptionalRef<Decima::CoreFile> query_file(std::uint64_t hash);
