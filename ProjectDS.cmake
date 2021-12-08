@@ -33,7 +33,9 @@ add_executable(ProjectDS
         include/utils.hpp
         include/app.hpp
         include/projectds_app.hpp
-        include/decima/serializable/object/object.hpp
+        include/decima/constants.hpp
+		include/decima/shared.hpp
+		include/decima/serializable/object/object.hpp
         include/decima/serializable/object/object_dummy.hpp
         include/decima/serializable/object/collection.hpp
         include/decima/serializable/object/prefetch.hpp
