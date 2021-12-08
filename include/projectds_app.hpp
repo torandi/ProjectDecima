@@ -31,6 +31,8 @@ public:
     ProjectDS(const std::pair<uint32_t, uint32_t>& windowSize, const std::string& title,
         bool imgui_multi_viewport = false);
 
+    //std::vector<int> filesToExport;
+
 public:
     bool m_multi_viewport;
     Popup current_popup = Popup::None;

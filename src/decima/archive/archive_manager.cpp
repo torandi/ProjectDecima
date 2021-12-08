@@ -20,12 +20,6 @@ int Decima::ArchiveManager::load_archive(const std::string& path) {
 }
 
 
-inline bool ends_with(std::string const & value, std::string const & ending)
-{
-    if (ending.size() > value.size()) return false;
-    return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
-}
-
 void Decima::ArchiveManager::load_prefetch() {
     auto& prefetch_data = query_file("prefetch/fullgame.prefetch").value().get();
 
@@ -70,4 +64,13 @@ Decima::OptionalRef<Decima::CoreFile> Decima::ArchiveManager::query_file(std::ui
 
 Decima::OptionalRef<Decima::CoreFile> Decima::ArchiveManager::query_file(const std::string& name) {
     return query_file(hash_string(sanitize_name(name), seed));
+}
+
+std::string Decima::ArchiveManager::get_file_name(uint64_t hash) {
+    auto it = hash_to_name.find(hash);
+    if (it != hash_to_name.end()) {
+        return sanitize_name(it->second);
+    } else {
+        return "";
+    }
 }

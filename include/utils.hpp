@@ -63,4 +63,10 @@ inline constexpr const char* filename(const char (&path)[Size]) {
     return path + separator_offset;
 }
 
+inline bool ends_with(std::string const & value, std::string const & ending)
+{
+    if (ending.size() > value.size()) return false;
+    return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+}
+
 #define LOG(...) (log(filename(__FILE__), ':', __LINE__, ' ', __VA_ARGS__))

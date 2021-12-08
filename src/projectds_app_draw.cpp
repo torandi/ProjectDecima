@@ -16,7 +16,12 @@ static void show_data_selection_dialog(ProjectDS& self) {
     if (!folder.empty()) {
         for (auto file : std::filesystem::directory_iterator(folder)) {
             LOG("Loading archive ", file.path().stem().string());
-            self.archive_array.load_archive(file.path().string());
+            int index = self.archive_array.load_archive(file.path().string());
+
+            // export hack hack
+			//if (file.path().filename() == "Patch.bin") {
+				//self.filesToExport.push_back(index);
+			//}
         }
 
         self.archive_array.load_prefetch();
@@ -41,6 +46,36 @@ static void show_data_selection_dialog(ProjectDS& self) {
                 if (self.archive_array.hash_to_archive_index.find(hash) != self.archive_array.hash_to_archive_index.end())
                     current_root->add_file(split_path.back(), hash, { 0 });
             }
+
+
+            // export all patch files
+
+            /*
+            for(int i : self.filesToExport) {
+                auto& archive = self.archive_array.manager.at(i);
+                LOG("Exporting archive ", archive.path);
+                const std::string base_folder = "E:\\HzD Mods\\patch_new";
+
+				for (const auto& entry : archive.content_table) {
+                    auto it = self.archive_array.hash_to_name.find(entry.hash);
+					if (it == self.archive_array.hash_to_name.end())
+						continue;
+                    const auto filename = sanitize_name(it->second);
+
+					std::filesystem::path full_path = std::filesystem::path(base_folder) / filename;
+					std::filesystem::create_directories(full_path.parent_path());
+
+					auto& file = archive.query_file(entry.hash).value().get();
+
+					std::ofstream output_file { full_path, std::ios::binary };
+					output_file.write(reinterpret_cast<const char*>(file.contents.data()), file.contents.size());
+
+					std::cout << "File was exported to: " << full_path << "\n";
+				}
+			}
+            */
+
+
 
             self.root_tree_constructing = false;
         },
@@ -70,6 +105,22 @@ static void show_export_selection_dialog(ProjectDS& self) {
             std::cout << "File was exported to: " << full_path << "\n";
         }
     }
+}
+
+static void add_selected_to_export (ProjectDS& self) {
+    if (self.selection_info.file == nullptr)
+        return;
+
+	std::string filename = self.archive_array.get_file_name(self.selection_info.selected_file);
+
+    if (filename.empty())
+		return;
+
+	uint64_t file_hash = hash_string(filename, Decima::seed);
+	if (self.archive_array.get_file_entry(file_hash).has_value()) {
+		self.archive_array.hash_to_name[file_hash] = filename;
+		self.selection_info.selected_files.insert(file_hash);
+	}
 }
 
 void ProjectDS::init_user() {
@@ -114,19 +165,12 @@ void ProjectDS::init_user() {
 
     shortcuts.push_back(ShortcutInfo {
         "Ctrl+A",
-        "Add file to selection by its name",
+        "Add selected file to selection.",
         GLFW_KEY_A,
         ImGuiKeyModFlags_Ctrl,
-        [&] { current_popup = Popup::AppendExportByName; },
+        [&] { add_selected_to_export(*this); },
     });
 
-    shortcuts.push_back(ShortcutInfo {
-        "Ctrl+Shift+A",
-        "Add file to selection by its hash",
-        GLFW_KEY_A,
-        ImGuiKeyModFlags_Ctrl | ImGuiKeyModFlags_Shift,
-        [&] { current_popup = Popup::AppendExportByHash; },
-    });
 }
 
 void ProjectDS::input_user() {
@@ -357,7 +401,8 @@ void ProjectDS::draw_filepreview() {
 
                 if (selected_file_changed) {
                     selection_info.file = &archive_array.query_file(selection_info.selected_file).value().get();
-                    selection_info.file->parse(archive_array);
+                    if(!ends_with(archive_array.get_file_name(selection_info.selected_file), "stream")) // don't parse stream files
+                        selection_info.file->parse(archive_array);
                     selection_info.preview_file = selection_info.selected_file;
                     selection_info.preview_file_size = selection_info.file->contents.size();
                     selection_info.preview_file_offset = 0;

@@ -12,6 +12,8 @@ namespace Decima {
         int load_archive(const std::string& path);
         void load_prefetch();
 
+        std::string get_file_name(uint64_t hash);
+
         [[nodiscard]] Decima::OptionalRef<Decima::CoreFile> query_file(std::uint64_t hash);
         [[nodiscard]] Decima::OptionalRef<Decima::CoreFile> query_file(const std::string& name);
 
