@@ -25,12 +25,31 @@ add_executable(ProjectDS
         src/decima/serializable/string.cpp
         src/decima/serializable/stream.cpp
         src/decima/serializable/guid.cpp
-        src/decima/serializable/handlers.cpp)
+        src/decima/serializable/handlers.cpp
+        include/decima/archive/archive.hpp
+        include/decima/archive/archive_manager.hpp
+        include/decima/archive/archive_tree.hpp
+        include/decima/archive/archive_file.hpp
+        include/utils.hpp
+        include/app.hpp
+        include/projectds_app.hpp
+        include/decima/serializable/object/object.hpp
+        include/decima/serializable/object/object_dummy.hpp
+        include/decima/serializable/object/collection.hpp
+        include/decima/serializable/object/prefetch.hpp
+        include/decima/serializable/object/translation.hpp
+        include/decima/serializable/object/texture.hpp
+        include/decima/serializable/object/texture_set.hpp
+        include/decima/serializable/reference.hpp
+        include/decima/serializable/string.hpp
+        include/decima/serializable/stream.hpp
+        include/decima/serializable/guid.hpp
+        include/decima/serializable/handlers.hpp)
 
-target_link_libraries(ProjectDS PRIVATE oodle hash imgui glfw glad)
+target_link_libraries(ProjectDS PRIVATE hash imgui glfw glad)
 target_include_directories(ProjectDS PRIVATE include)
 
 if (MSVC)
-    target_compile_definitions(ProjectDS PUBLIC _CRT_SECURE_NO_WARNINGS)
+    target_compile_definitions(ProjectDS PUBLIC _CRT_SECURE_NO_WARNINGS _ITERATOR_DEBUG_LEVEL=0)
     target_compile_options(ProjectDS PUBLIC /EHs)
 endif ()
