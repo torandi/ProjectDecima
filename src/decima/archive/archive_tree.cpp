@@ -39,7 +39,7 @@ bool is_filter_matches(FileTree* root, const ImGuiTextFilter& filter) {
     return result;
 }
 
-bool is_archive_matches(FileTree* root, const std::unordered_set<std::uint64_t>& file_filter) {
+bool is_archive_matches(FileTree* root, const std::unordered_map<std::uint64_t, int>& file_filter) {
     bool result = false;
 
     for (auto& [name, data] : root->files) {
@@ -81,6 +81,7 @@ void FileTree::reset_filter(bool state) {
 }
 
 void FileTree::reset_archive_filter(bool state) {
+    archive_files.clear();
     for (auto& [_, data] : folders) {
         data.tree->reset_archive_filter(state);
         data.inArchives = state;
@@ -95,11 +96,9 @@ void FileTree::update_archive_filter(const std::vector<Decima::Archive*>& archiv
     if (!archives.empty()) {
         reset_archive_filter(false);
 
-        std::unordered_set<std::uint64_t> archive_files;
         for (const auto* archive: archives) {
-
             for (const auto& [hash, _] : archive->get_hash_lookup()) {
-                archive_files.insert(hash);
+                archive_files.insert(std::make_pair(hash, archive->index));
             }
         }
 
@@ -110,7 +109,7 @@ void FileTree::update_archive_filter(const std::vector<Decima::Archive*>& archiv
 }
 
 
-void FileTree::draw(SelectionInfo& selection, Decima::ArchiveManager& archive_array, bool draw_header) {
+void FileTree::draw(SelectionInfo& selection, Decima::ArchiveManager& archive_array, bool draw_header, FileTree* root) {
     if (draw_header) {
         ImGui::Separator();
         ImGui::Columns(3);
@@ -126,6 +125,9 @@ void FileTree::draw(SelectionInfo& selection, Decima::ArchiveManager& archive_ar
         ImGui::SetColumnWidth(1, 100);
         ImGui::SetColumnWidth(2, 100);
     }
+    // archive lookup stored in root
+    if (root == nullptr)
+        root = this;
 
     for (auto& [name, data] : folders) {
         if (!data.inFilter || !data.inArchives)
@@ -151,7 +153,7 @@ void FileTree::draw(SelectionInfo& selection, Decima::ArchiveManager& archive_ar
             bool contains_all = true;
 
             for (const auto& item : folder_files) {
-                if (selection.selected_files.find(item) == selection.selected_files.end()) {
+                if (selection.selected_files.find(root->get_selection_info(item)) == selection.selected_files.end()) {
                     contains_all = false;
                     break;
                 }
@@ -159,10 +161,10 @@ void FileTree::draw(SelectionInfo& selection, Decima::ArchiveManager& archive_ar
 
             if (contains_all) {
                 for (const auto& item : folder_files)
-                    selection.selected_files.erase(item);
+                    selection.selected_files.erase(root->get_selection_info(item));
             } else {
                 for (const auto& item : folder_files)
-                    selection.selected_files.insert(item);
+                    selection.selected_files.insert(root->get_selection_info(item));
             }
         }
 
@@ -174,7 +176,7 @@ void FileTree::draw(SelectionInfo& selection, Decima::ArchiveManager& archive_ar
 
         if (show) {
             if (items_count > 0) {
-                data.tree->draw(selection, archive_array, false);
+                data.tree->draw(selection, archive_array, false, root);
             } else {
                 ImGui::TextDisabled("Empty");
                 ImGui::NextColumn();
@@ -189,7 +191,9 @@ void FileTree::draw(SelectionInfo& selection, Decima::ArchiveManager& archive_ar
         if (!data.inFilter || !data.inArchives)
             continue;
 
-        const bool is_selected = selection.selected_files.find(data.tree.hash) != selection.selected_files.end();
+        auto item = root->get_selection_info(data.tree.hash);
+
+        const bool is_selected = selection.selected_files.find(item) != selection.selected_files.end();
 
         ImGui::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_SpanFullWidth | ImGuiTreeNodeFlags_Bullet | ImGuiTreeNodeFlags_Leaf | static_cast<int>(is_selected));
 
@@ -198,9 +202,9 @@ void FileTree::draw(SelectionInfo& selection, Decima::ArchiveManager& archive_ar
 
             if (ImGui::GetIO().KeyCtrl) {
                 if (is_selected) {
-                    selection.selected_files.erase(data.tree.hash);
+                    selection.selected_files.erase(item);
                 } else {
-                    selection.selected_files.insert(data.tree.hash);
+                    selection.selected_files.insert(item);
                 }
             }
         }
@@ -225,4 +229,11 @@ void FileTree::draw(SelectionInfo& selection, Decima::ArchiveManager& archive_ar
     if (draw_header) {
         ImGui::Columns(1);
     }
+}
+FileSelectionInfo FileTree::get_selection_info(std::uint64_t hash) {
+    auto it = archive_files.find(hash);
+    if (it != archive_files.end())
+        return FileSelectionInfo(hash, it->second);
+    else
+        return FileSelectionInfo(hash, -1);
 }

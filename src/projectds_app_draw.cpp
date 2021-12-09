@@ -9,6 +9,7 @@
 #include "projectds_app.hpp"
 
 #include "utils.hpp"
+#include "decima/constants.hpp"
 #include "util/pfd.h"
 
 static void show_data_selection_dialog(ProjectDS& self) {
@@ -103,17 +104,27 @@ static void show_export_selection_dialog(ProjectDS& self) {
 
     if (!base_folder.empty()) {
         for (const auto selected_file : self.selection_info.selected_files) {
-            const auto filename = sanitize_name(self.archive_array.hash_to_name.at(selected_file));
+            const auto filename = sanitize_name(self.archive_array.hash_to_name.at(selected_file.file_hash));
 
             std::filesystem::path full_path = std::filesystem::path(base_folder) / filename;
             std::filesystem::create_directories(full_path.parent_path());
 
-            auto& file = self.archive_array.query_file(filename).value().get();
+            Decima::OptionalRef<Decima::CoreFile> file = {};
+            if (selected_file.archive_index != -1) {
+                std::uint64_t file_hash = hash_string(sanitize_name(filename), Decima::seed);
+                file = self.archive_array.manager[selected_file.archive_index].query_file(file_hash);
+            } else {
+                file = self.archive_array.query_file(filename);
+            }
 
-            std::ofstream output_file { full_path, std::ios::binary };
-            output_file.write(reinterpret_cast<const char*>(file.contents.data()), file.contents.size());
+            if (file.has_value()) {
+                std::ofstream output_file { full_path, std::ios::binary };
+                output_file.write(reinterpret_cast<const char*>(file.value().get().contents.data()), file.value().get().contents.size());
 
-            std::cout << "File was exported to: " << full_path << "\n";
+                std::cout << "File was exported to: " << full_path << " from archive " << file.value().get().get_archive().path << "\n";
+            } else {
+                std::cout << "Could not export " << filename << ", not found in archive.";
+            }
         }
     }
 }
@@ -130,7 +141,7 @@ static void add_selected_to_export (ProjectDS& self) {
 	uint64_t file_hash = hash_string(filename, Decima::seed);
 	if (self.archive_array.get_file_entry(file_hash).has_value()) {
 		self.archive_array.hash_to_name[file_hash] = filename;
-		self.selection_info.selected_files.insert(file_hash);
+		self.selection_info.selected_files.insert(FileSelectionInfo(file_hash, -1));
 	}
 }
 
@@ -366,13 +377,25 @@ void ProjectDS::draw_filepreview() {
                     ImGui::EndPopup();
                 }
 
+                const bool selected_file_changed = selection_info.preview_file != selection_info.selected_file;
+
+                if (selected_file_changed) {
+                    selection_info.file = &query_file_from_selected_archives(selection_info.selected_file).value().get();
+                    if(!ends_with(archive_array.get_file_name(selection_info.selected_file), "stream")) // don't parse stream files
+                        selection_info.file->parse(archive_array);
+
+                    selection_info.preview_file = selection_info.selected_file;
+                    selection_info.preview_file_size = selection_info.file->contents.size();
+                    selection_info.preview_file_offset = 0;
+                }
+
                 ImGui::Separator();
                 ImGui::Columns(2);
                 {
                     ImGui::Text("Archive ID");
                     ImGui::NextColumn();
 
-                    ImGui::Text("%s", archive_array.manager.at(archive_array.hash_to_archive_index.at(selection_info.selected_file)).path.c_str());
+                    ImGui::Text("%s", selection_info.file->get_archive().path.c_str());
                     ImGui::NextColumn();
 
                     ImGui::Separator();
@@ -409,16 +432,6 @@ void ProjectDS::draw_filepreview() {
                 }
                 ImGui::Columns(1);
 
-                const bool selected_file_changed = selection_info.preview_file != selection_info.selected_file;
-
-                if (selected_file_changed) {
-                    selection_info.file = &archive_array.query_file(selection_info.selected_file).value().get();
-                    if(!ends_with(archive_array.get_file_name(selection_info.selected_file), "stream")) // don't parse stream files
-                        selection_info.file->parse(archive_array);
-                    selection_info.preview_file = selection_info.selected_file;
-                    selection_info.preview_file_size = selection_info.file->contents.size();
-                    selection_info.preview_file_offset = 0;
-                }
             } else {
                 ImGui::Text("Error getting file info!");
             }
@@ -518,7 +531,6 @@ void ProjectDS::draw_archive_select() {
 
             ImGuiIO& io = ImGui::GetIO();
 
-
             for (int i=archive_array.manager.size() - 1; i >= 0; --i) {
                 const auto& archive = archive_array.manager[i];
                 std::filesystem::path path(archive.path);
@@ -568,14 +580,23 @@ void ProjectDS::draw_export() {
             show_export_selection_dialog(*this);
 
         if (ImGui::PushItemWidth(-1), ImGui::ListBoxHeader("##", { 0, -1 })) {
-            for (const auto selected_file : selection_info.selected_files) {
-                if (archive_array.hash_to_name.find(selected_file) != archive_array.hash_to_name.end()) {
-                    if (ImGui::Selectable(archive_array.hash_to_name[selected_file].c_str()))
-                        selection_info.selected_file = selected_file;
+            for (const auto& selected_file : selection_info.selected_files) {
+
+
+
+                std::string archive_name = "";
+                
+                if (selected_file.archive_index != -1) {
+                    std::filesystem::path archive_path(archive_array.manager[selected_file.archive_index].path);
+                    archive_name = "[" + archive_path.stem().string() + "] ";
+                }
+                if (archive_array.hash_to_name.find(selected_file.file_hash) != archive_array.hash_to_name.end()) {
+                    if (ImGui::Selectable((archive_name + archive_array.hash_to_name[selected_file.file_hash]).c_str()))
+                        selection_info.selected_file = selected_file.file_hash;
                 } else {
-                    std::string new_name = "Hash: " + uint64_to_hex(selected_file);
+                    std::string new_name = archive_name + "Hash: " + uint64_to_hex(selected_file.file_hash);
                     if (ImGui::Selectable(new_name.c_str()))
-                        selection_info.selected_file = selected_file;
+                        selection_info.selected_file = selected_file.file_hash;
                 }
             }
 
@@ -602,7 +623,7 @@ void ProjectDS::draw_export() {
                 uint64_t file_hash = hash_string(sanitize_name(str_path), Decima::seed);
                 if (archive_array.get_file_entry(file_hash).has_value()) {
                     archive_array.hash_to_name[file_hash] = str_path;
-                    selection_info.selected_files.insert(file_hash);
+                    selection_info.selected_files.insert(FileSelectionInfo(file_hash, -1));
                 }
             }
 
@@ -622,7 +643,7 @@ void ProjectDS::draw_export() {
             if (ImGui::Button("Add to selection!")) {
                 if (archive_array.get_file_entry(file_hash).has_value()) {
                     archive_array.hash_to_name[file_hash] = "HASH: " + uint64_to_hex(file_hash);
-                    selection_info.selected_files.insert(file_hash);
+                    selection_info.selected_files.insert(FileSelectionInfo(file_hash, -1));
                 }
             }
 

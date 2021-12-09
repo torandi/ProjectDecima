@@ -21,6 +21,10 @@ namespace Decima {
 
         void parse(ArchiveManager& archive_array);
 
+        const Archive& get_archive() const {
+            return archive;
+        }
+
     private:
         Archive& archive;
         ArchiveFileEntry& entry;

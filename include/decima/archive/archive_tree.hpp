@@ -12,13 +12,33 @@
 #include "archive_manager.hpp"
 #include "decima/serializable/object/object_dummy.hpp"
 
+struct FileSelectionInfo {
+    FileSelectionInfo(std::uint64_t file, int archive)
+        : file_hash(file)
+        , archive_index(archive) { }
+    std::uint64_t file_hash;
+    int archive_index;
+
+    bool operator==(const FileSelectionInfo& other) const {
+        return file_hash == other.file_hash && archive_index == other.archive_index;
+    }
+};
+
+template<>
+struct std::hash<FileSelectionInfo> {
+    std::size_t operator()(FileSelectionInfo const& fs) const noexcept {
+        return std::hash<std::uint64_t> {}(fs.file_hash) + std::hash<int> {}(fs.archive_index);
+    }
+};
+
+
 struct SelectionInfo {
     SelectionInfo() = default;
     std::uint64_t preview_file { 0 };
     std::uint64_t preview_file_size { 0 };
     std::uint64_t preview_file_offset { 0 };
     std::uint64_t selected_file { 0 };
-    std::unordered_set<std::uint64_t> selected_files;
+    std::unordered_set<FileSelectionInfo> selected_files;
     std::set<int> selected_archives;
     Decima::CoreFile* file;
 };
@@ -64,5 +84,10 @@ public:
         }
     }
 
-    void draw(SelectionInfo& selection, Decima::ArchiveManager& archive_array, bool draw_header = true);
+    void draw(SelectionInfo& selection, Decima::ArchiveManager& archive_array, bool draw_header = true, FileTree* root = nullptr);
+
+    FileSelectionInfo get_selection_info(std::uint64_t hash);
+
+private:
+	std::unordered_map<std::uint64_t, int> archive_files; // hash => archive index
 };

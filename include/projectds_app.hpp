@@ -31,8 +31,6 @@ public:
     ProjectDS(const std::pair<uint32_t, uint32_t>& windowSize, const std::string& title,
         bool imgui_multi_viewport = false);
 
-    //std::vector<int> filesToExport;
-
 public:
     bool m_multi_viewport;
     Popup current_popup = Popup::None;
@@ -55,6 +53,8 @@ public:
 
     std::vector<Decima::Archive*> get_selected_archives();
 
+    Decima::OptionalRef<Decima::CoreFile> query_file_from_selected_archives(std::uint64_t hash);
+
 protected:
     void update_user(double ts) override;
     void input_user() override;
@@ -68,4 +68,6 @@ protected:
     void begin_frame_user() override;
 
     void end_frame_user() override;
+
+
 };

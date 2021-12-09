@@ -13,6 +13,7 @@ int Decima::ArchiveManager::load_archive(const std::string& path) {
     archive.open();
 
     const int archiveIndex = static_cast<int>(manager.size() - 1);
+    archive.index = archiveIndex;
 
     for (const auto& entry : archive.content_table) {
 		hash_to_archive_index.emplace(entry.hash, archiveIndex);

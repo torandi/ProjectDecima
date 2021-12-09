@@ -36,14 +36,20 @@ std::vector<char> unpack(const Decima::Archive& archive, const Decima::ArchiveFi
         return std::distance(archive.chunk_table.begin(), index);
     };
 
-    auto [chunk_entry_begin, chunk_entry_end] = [&] {
+    auto [chunk_entry_begin_offset, chunk_entry_end_offset] = [&] {
         auto first_chunk_offset = aligned_offset(entry.offset, archive.content_info.max_chunk_size);
         auto last_chunk_offset = aligned_offset(entry.offset + entry.size, archive.content_info.max_chunk_size);
 
         return std::make_pair(
-            archive.chunk_table.begin() + chunk_from_offset(first_chunk_offset),
-            archive.chunk_table.begin() + (chunk_from_offset(last_chunk_offset) + 1));
+            chunk_from_offset(first_chunk_offset),
+            (chunk_from_offset(last_chunk_offset) + 1));
     }();
+
+    if (chunk_entry_end_offset > archive.chunk_table.size())
+        return {}; // out of bounds
+
+    auto chunk_entry_begin = archive.chunk_table.begin() + chunk_entry_begin_offset;
+    auto chunk_entry_end = archive.chunk_table.begin() + chunk_entry_end_offset;
 
     auto decompressed_size = std::accumulate(chunk_entry_begin, chunk_entry_end, 0, [](const auto acc, const auto& item) {
         return acc + item.uncompressed_size;

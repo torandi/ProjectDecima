@@ -55,12 +55,25 @@ void ProjectDS::init_imgui() {
 std::vector<Decima::Archive*> ProjectDS::get_selected_archives() {
     std::vector<Decima::Archive*> archives;
     archives.reserve(selection_info.selected_archives.size());
-    for (int archiveIdx : selection_info.selected_archives) {
-        archives.push_back(&archive_array.manager[archiveIdx]);
+    for (auto it = selection_info.selected_archives.rbegin(); it != selection_info.selected_archives.rend(); ++it) {
+        archives.push_back(&archive_array.manager[*it]);
     }
     return archives;
 }
 
+Decima::OptionalRef<Decima::CoreFile> ProjectDS::query_file_from_selected_archives(std::uint64_t hash) {
+    std::vector<Decima::Archive*> archives = get_selected_archives();
+    if (archives.empty())
+        return archive_array.query_file(hash);
+
+    for (auto* archive : archives) {
+        auto file = archive->query_file(hash);
+        if (file.has_value()) {
+            return file;
+        }
+    }
+    return {};
+}
 
 
 
