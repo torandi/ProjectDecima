@@ -3,6 +3,7 @@
 #include <unordered_set>
 #include <map>
 #include <memory>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -18,6 +19,7 @@ struct SelectionInfo {
     std::uint64_t preview_file_offset { 0 };
     std::uint64_t selected_file { 0 };
     std::unordered_set<std::uint64_t> selected_files;
+    std::set<int> selected_archives;
     Decima::CoreFile* file;
 };
 
@@ -26,8 +28,14 @@ struct FileInfo {
     Decima::CoreHeader header { 0 };
 };
 
-template <class T>
-using FileTreeToggleable = std::pair<T, bool>;
+template<typename T>
+struct FileTreeToggleable {
+    FileTreeToggleable(T&& t)
+        : tree(std::move(t)) {};
+    T tree;
+    bool inFilter { true };
+    bool inArchives { true };
+};
 
 class FileTree {
 public:
@@ -39,8 +47,10 @@ public:
     void add_file(const std::string& filename, uint64_t hash, Decima::CoreHeader header);
 
     void update_filter(const ImGuiTextFilter& filter);
+    void update_archive_filter(const std::vector<Decima::Archive*>& archives);
 
     void reset_filter(bool state);
+    void reset_archive_filter(bool state);
 
     template <typename Visitor>
     void visit(const Visitor& visitor, std::size_t depth = 0) const {

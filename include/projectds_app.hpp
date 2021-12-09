@@ -45,12 +45,15 @@ public:
     ImGuiTextFilter filter;
     MemoryEditor file_viewer;
     bool root_tree_constructing { false };
+    bool archive_filter_changed { false };
 
     void init_user() override;
 
     void init_imgui();
 
     void init_filetype_handlers();
+
+    std::vector<Decima::Archive*> get_selected_archives();
 
 protected:
     void update_user(double ts) override;
@@ -60,6 +63,7 @@ protected:
     void draw_filepreview();
     void draw_tree();
     void draw_export();
+    void draw_archive_select();
 
     void begin_frame_user() override;
 

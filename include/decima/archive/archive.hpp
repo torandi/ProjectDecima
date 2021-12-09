@@ -52,6 +52,9 @@ namespace Decima {
         std::vector<Decima::ArchiveChunkEntry> chunk_table;
         std::vector<Decima::ArchiveFileEntry> content_table;
 
+        const std::unordered_map<std::uint64_t, std::uint64_t>& get_hash_lookup() const {
+            return m_hash_to_index;
+        }
     private:
         friend class ArchiveManager;
         friend class CoreFile;

@@ -202,6 +202,7 @@ void ProjectDS::update_user(double ts) {
     draw_filepreview();
     draw_export();
     draw_tree();
+    draw_archive_select();
 }
 
 void ProjectDS::init_filetype_handlers() {
@@ -473,6 +474,11 @@ void ProjectDS::draw_filepreview() {
 void ProjectDS::draw_tree() {
     ImGui::Begin("Trees");
     {
+        if (archive_filter_changed) {
+            archive_filter_changed = false;
+            root_tree.update_archive_filter(get_selected_archives());
+        }
+
         if (filter.Draw()) {
             root_tree.update_filter(filter);
 
@@ -494,6 +500,57 @@ void ProjectDS::draw_tree() {
         ImGui::BeginChild("FileTree");
         root_tree.draw(selection_info, archive_array);
         ImGui::EndChild();
+    }
+    ImGui::End();
+}
+
+void ProjectDS::draw_archive_select() {
+    static int last_select = -1;
+    ImGui::Begin("Archive Browser");
+    {
+        if (ImGui::Button("Clear filter", { -1, 0 })) {
+            selection_info.selected_archives.clear();
+            last_select = -1;
+            archive_filter_changed = true;
+        }
+
+        if (ImGui::PushItemWidth(-1), ImGui::ListBoxHeader("##", { 0, -1 })) {
+
+            ImGuiIO& io = ImGui::GetIO();
+
+
+            for (int i=archive_array.manager.size() - 1; i >= 0; --i) {
+                const auto& archive = archive_array.manager[i];
+                std::filesystem::path path(archive.path);
+                const bool is_selected = selection_info.selected_archives.count(i) != 0;
+                if(ImGui::Selectable(path.stem().string().c_str(), is_selected))
+				{
+                    if (io.KeyMods & ImGuiKeyModFlags_Shift) {
+                        if (last_select != -1) {
+                            int minVal = min(last_select, i);
+                            int maxVal = max(last_select, i);
+                            for (int j = minVal; j < maxVal + 1; ++j) {
+                                selection_info.selected_archives.insert(j);
+                            }
+                        } else {
+                            selection_info.selected_archives.insert(i);
+                        }
+                    } else if (io.KeyMods & ImGuiKeyModFlags_Ctrl) {
+                        auto result = selection_info.selected_archives.insert(i);
+                        if (!result.second)
+                            selection_info.selected_archives.erase(result.first); // erase if already in selection
+                    } else {
+						selection_info.selected_archives.clear();
+                        selection_info.selected_archives.insert(i);
+                    }
+
+                    last_select = i;
+                    archive_filter_changed = true;
+				}
+            }
+
+            ImGui::ListBoxFooter();
+        }
     }
     ImGui::End();
 }

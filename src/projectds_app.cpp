@@ -52,6 +52,14 @@ void ProjectDS::init_imgui() {
     ImGui_ImplOpenGL3_NewFrame();
 }
 
+std::vector<Decima::Archive*> ProjectDS::get_selected_archives() {
+    std::vector<Decima::Archive*> archives;
+    archives.reserve(selection_info.selected_archives.size());
+    for (int archiveIdx : selection_info.selected_archives) {
+        archives.push_back(&archive_array.manager[archiveIdx]);
+    }
+    return archives;
+}
 
 
 
