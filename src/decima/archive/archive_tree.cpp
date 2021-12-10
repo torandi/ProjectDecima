@@ -146,8 +146,9 @@ void FileTree::draw(SelectionInfo& selection, Decima::ArchiveManager& archive_ar
 
             std::unordered_set<std::uint64_t> folder_files;
 
-            for (const auto& file : data.tree->files) {
-                folder_files.insert(file.second.tree.hash);
+            for (const auto& [name,file] : data.tree->files) {
+                if(file.inFilter && file.inArchives)
+                    folder_files.insert(file.tree.hash);
             }
 
             bool contains_all = true;
