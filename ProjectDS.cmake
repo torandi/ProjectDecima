@@ -1,4 +1,4 @@
-add_executable(ProjectDS
+add_executable(ProjectDS WIN32
         src/main.cpp
         src/decima/archive/archive.cpp
         src/decima/archive/archive_manager.cpp
