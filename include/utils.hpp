@@ -24,6 +24,9 @@ void split(const std::string& str, std::vector<std::string>& cont, char delim);
 inline std::string format_size(std::size_t size) noexcept {
     using FormatInfo = std::pair<std::string, std::size_t>;
 
+    if (size == 0)
+        return "0 B";
+
     static const std::vector<FormatInfo> formats {
         FormatInfo { "B", 0 },
         FormatInfo { "KB", 2 },
@@ -32,7 +35,7 @@ inline std::string format_size(std::size_t size) noexcept {
         FormatInfo { "TB", 1 }
     };
 
-    const auto format_order = std::min<std::size_t>(formats.size(), std::log(size) / 6.931471805599453);
+    const auto format_order = std::min<std::size_t>(formats.size() - 1, std::log(size) / 6.931471805599453);
     const auto [format_name, format_precision] = formats[format_order];
 
     std::stringstream buffer;

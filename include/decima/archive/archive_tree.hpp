@@ -72,6 +72,9 @@ public:
     void reset_filter(bool state);
     void reset_archive_filter(bool state);
 
+    void expand_all();
+    void collapse_all();
+
     template <typename Visitor>
     void visit(const Visitor& visitor, std::size_t depth = 0) const {
         for (const auto& [name, data] : folders) {
@@ -84,10 +87,12 @@ public:
         }
     }
 
-    void draw(SelectionInfo& selection, Decima::ArchiveManager& archive_array, bool draw_header = true, FileTree* root = nullptr);
+    void draw(SelectionInfo& selection, Decima::ArchiveManager& archive_array, bool draw_header = true, FileTree* root = nullptr, int expand_collapse = -1);
 
     FileSelectionInfo get_selection_info(std::uint64_t hash);
 
 private:
 	std::unordered_map<std::uint64_t, int> archive_files; // hash => archive index
+
+    int expand_collapse_next = 0;
 };

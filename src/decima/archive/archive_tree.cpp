@@ -108,8 +108,15 @@ void FileTree::update_archive_filter(const std::vector<Decima::Archive*>& archiv
     }
 }
 
+void FileTree::expand_all() {
+    expand_collapse_next = 1;
+}
 
-void FileTree::draw(SelectionInfo& selection, Decima::ArchiveManager& archive_array, bool draw_header, FileTree* root) {
+void FileTree::collapse_all() {
+    expand_collapse_next = -1;
+}
+
+void FileTree::draw(SelectionInfo& selection, Decima::ArchiveManager& archive_array, bool draw_header, FileTree* root, int expand_collapse) {
     if (draw_header) {
         ImGui::Separator();
         ImGui::Columns(3);
@@ -126,12 +133,20 @@ void FileTree::draw(SelectionInfo& selection, Decima::ArchiveManager& archive_ar
         ImGui::SetColumnWidth(2, 100);
     }
     // archive lookup stored in root
-    if (root == nullptr)
+    if (root == nullptr) {
         root = this;
+        expand_collapse = expand_collapse_next;
+        expand_collapse_next = 0;
+    }
 
     for (auto& [name, data] : folders) {
         if (!data.inFilter || !data.inArchives)
             continue;
+
+        if (expand_collapse == 1)
+            ImGui::SetNextItemOpen(true);
+        else if(expand_collapse == -1)
+            ImGui::SetNextItemOpen(false);
 
         const auto tree_name = name + "##" + std::to_string(folders.size());
         const auto show = ImGui::TreeNodeEx(tree_name.c_str(), ImGuiTreeNodeFlags_SpanFullWidth | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick);
@@ -177,7 +192,7 @@ void FileTree::draw(SelectionInfo& selection, Decima::ArchiveManager& archive_ar
 
         if (show) {
             if (items_count > 0) {
-                data.tree->draw(selection, archive_array, false, root);
+                data.tree->draw(selection, archive_array, false, root, expand_collapse);
             } else {
                 ImGui::TextDisabled("Empty");
                 ImGui::NextColumn();
@@ -230,6 +245,7 @@ void FileTree::draw(SelectionInfo& selection, Decima::ArchiveManager& archive_ar
     if (draw_header) {
         ImGui::Columns(1);
     }
+
 }
 FileSelectionInfo FileTree::get_selection_info(std::uint64_t hash) {
     auto it = archive_files.find(hash);

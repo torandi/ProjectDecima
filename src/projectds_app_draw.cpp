@@ -504,6 +504,18 @@ void ProjectDS::draw_tree() {
             }
         }
 
+        ImGui::SameLine();
+
+        if (ImGui::SmallButton("Expand all")) {
+            root_tree.expand_all();
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::SmallButton("Collapse all")) {
+            root_tree.collapse_all();
+        }
+
         if (root_tree_constructing) {
             ImGui::PushStyleColor(ImGuiCol_Text, 0xff99ffff);
             ImGui::TextWrapped("File tree is still constructing, some files may be missing");
