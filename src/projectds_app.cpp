@@ -12,6 +12,9 @@
 #include <filesystem>
 #include <GLFW/glfw3.h>
 
+
+ProjectDS* ProjectDS::s_app = nullptr;
+
 static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     ImGuiIO& io = ImGui::GetIO();
 
@@ -47,6 +50,7 @@ ProjectDS::ProjectDS(const std::pair<uint32_t, uint32_t>& windowSize, const std:
                      bool imgui_multi_viewport) : App(windowSize,
                                                       title) {
     m_multi_viewport = imgui_multi_viewport;
+    s_app = this;
 }
 
 void ProjectDS::begin_frame_user() {

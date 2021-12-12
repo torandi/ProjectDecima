@@ -16,7 +16,8 @@ public:
         About,
         AppendExportByName,
         AppendExportByHash,
-        Shortcuts
+        Shortcuts,
+        Error
     };
 
     struct ShortcutInfo {
@@ -35,6 +36,7 @@ public:
     bool m_multi_viewport;
     Popup current_popup = Popup::None;
     std::vector<ShortcutInfo> shortcuts;
+    std::string error_message = "";
 
     Decima::ArchiveManager archive_array;
     std::vector<const char*> file_names;
@@ -60,6 +62,8 @@ public:
 
     Decima::OptionalRef<Decima::CoreFile> query_file_from_selected_archives(std::uint64_t hash);
 
+    static void show_error(const std::string& message);
+
 protected:
     void update_user(double ts) override;
     void input_user() override;
@@ -75,5 +79,5 @@ protected:
 
     void end_frame_user() override;
 
-
+    static ProjectDS* s_app;
 };

@@ -258,6 +258,11 @@ void ProjectDS::draw_dockspace() {
         current_popup = Popup::None;
     }
 
+    if (current_popup == Popup::Error) {
+        ImGui::OpenPopup("Error");
+        current_popup = Popup::None;
+    }
+
     ImGui::SetNextWindowSize({ 500, 0 }, ImGuiCond_Always);
 
     if (ImGui::BeginPopupModal("Shortcuts", nullptr, ImGuiWindowFlags_NoMove)) {
@@ -285,6 +290,16 @@ void ProjectDS::draw_dockspace() {
         ImGui::Columns(1);
 
         if (ImGui::Button("Got it", { -1, 0 }))
+            ImGui::CloseCurrentPopup();
+
+        ImGui::EndPopup();
+    }
+
+    if (ImGui::BeginPopupModal("Error", nullptr, ImGuiWindowFlags_NoMove)) {
+		ImGui::Text("An error occured");
+		ImGui::Text(error_message.c_str());
+
+        if (ImGui::Button("Dismiss", { -1, 0 }))
             ImGui::CloseCurrentPopup();
 
         ImGui::EndPopup();
@@ -652,4 +667,9 @@ void ProjectDS::draw_export() {
         }
     }
     ImGui::End();
+}
+
+void ProjectDS::show_error(const std::string& message) {
+    s_app->error_message = message;
+    s_app->current_popup = Popup::Error;
 }

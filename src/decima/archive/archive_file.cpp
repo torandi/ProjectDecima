@@ -7,6 +7,8 @@
 #include "decima/archive/archive.hpp"
 #include "decima/serializable/handlers.hpp"
 
+#include "projectds_app.hpp"
+
 static void decrypt_chunk(uint8_t* data, const Decima::ArchiveChunkEntry& chunk_entry) {
     uint32_t iv[4];
     MurmurHash3_x64_128(&chunk_entry, 0x10, Decima::seed, iv);
@@ -45,8 +47,10 @@ std::vector<char> unpack(const Decima::Archive& archive, const Decima::ArchiveFi
             (chunk_from_offset(last_chunk_offset) + 1));
     }();
 
-    if (chunk_entry_end_offset > archive.chunk_table.size())
-        return {}; // out of bounds
+    if (chunk_entry_end_offset > archive.chunk_table.size()) {
+        ProjectDS::show_error("Error reading archive, bin file badly formated. Trunkating.");
+        chunk_entry_end_offset = archive.chunk_table.size();
+    }
 
     auto chunk_entry_begin = archive.chunk_table.begin() + chunk_entry_begin_offset;
     auto chunk_entry_end = archive.chunk_table.begin() + chunk_entry_end_offset;
