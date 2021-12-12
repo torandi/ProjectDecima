@@ -54,36 +54,6 @@ static void show_data_selection_dialog(ProjectDS& self) {
                     current_root->add_file(split_path.back(), hash, { 0 });
             }
 
-
-            // export all patch files
-
-            /*
-            for(int i : self.filesToExport) {
-                auto& archive = self.archive_array.manager.at(i);
-                LOG("Exporting archive ", archive.path);
-                const std::string base_folder = "E:\\HzD Mods\\patch_new";
-
-				for (const auto& entry : archive.content_table) {
-                    auto it = self.archive_array.hash_to_name.find(entry.hash);
-					if (it == self.archive_array.hash_to_name.end())
-						continue;
-                    const auto filename = sanitize_name(it->second);
-
-					std::filesystem::path full_path = std::filesystem::path(base_folder) / filename;
-					std::filesystem::create_directories(full_path.parent_path());
-
-					auto& file = archive.query_file(entry.hash).value().get();
-
-					std::ofstream output_file { full_path, std::ios::binary };
-					output_file.write(reinterpret_cast<const char*>(file.contents.data()), file.contents.size());
-
-					std::cout << "File was exported to: " << full_path << "\n";
-				}
-			}
-            */
-
-
-
             self.root_tree_constructing = false;
         },
             std::ref(self))
