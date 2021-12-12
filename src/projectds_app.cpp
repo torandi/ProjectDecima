@@ -10,6 +10,38 @@
 
 #include <fstream>
 #include <filesystem>
+#include <GLFW/glfw3.h>
+
+static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    ImGuiIO& io = ImGui::GetIO();
+
+    const char* key_name = glfwGetKeyName(key, scancode);
+
+    if (key_name)
+    {
+        key = (int)key_name[0];
+
+        // Convert to upper-case
+        if (key >= 97 && key <= 122)
+            key -= 32;  
+    }
+
+    if (action == GLFW_PRESS)
+        io.KeysDown[key] = true;
+    if (action == GLFW_RELEASE)
+        io.KeysDown[key] = false;
+
+    // Modifiers are not reliable across systems
+    io.KeyCtrl = io.KeysDown[GLFW_KEY_LEFT_CONTROL] || io.KeysDown[GLFW_KEY_RIGHT_CONTROL];
+    io.KeyShift = io.KeysDown[GLFW_KEY_LEFT_SHIFT] || io.KeysDown[GLFW_KEY_RIGHT_SHIFT];
+    io.KeyAlt = io.KeysDown[GLFW_KEY_LEFT_ALT] || io.KeysDown[GLFW_KEY_RIGHT_ALT];
+#ifdef _WIN32
+    io.KeySuper = false;
+#else
+    io.KeySuper = io.KeysDown[GLFW_KEY_LEFT_SUPER] || io.KeysDown[GLFW_KEY_RIGHT_SUPER];
+#endif
+
+}
 
 ProjectDS::ProjectDS(const std::pair<uint32_t, uint32_t>& windowSize, const std::string& title,
                      bool imgui_multi_viewport) : App(windowSize,
@@ -77,6 +109,10 @@ void ProjectDS::init_imgui() {
     ImGui::StyleColorsDark();
 
     ImGui_ImplGlfw_InitForOpenGL(m_window, true);
+
+    // Override keycallback, to map to real layout
+    glfwSetKeyCallback(m_window, KeyCallback);
+
     ImGui_ImplOpenGL3_Init("#version 150");
     ImGui_ImplOpenGL3_NewFrame();
 }

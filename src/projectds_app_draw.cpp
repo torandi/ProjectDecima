@@ -164,10 +164,10 @@ void ProjectDS::init_user() {
     });
 
     shortcuts.push_back(ShortcutInfo {
-        "Ctrl+Shift+P",
+        "Shift+P",
         "Collapse all",
         GLFW_KEY_P,
-        ImGuiKeyModFlags_Ctrl | ImGuiKeyModFlags_Shift,
+        ImGuiKeyModFlags_Shift,
         [&] { root_tree.collapse_all(); },
     });
 
