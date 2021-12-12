@@ -8,6 +8,9 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 
+#include <fstream>
+#include <filesystem>
+
 ProjectDS::ProjectDS(const std::pair<uint32_t, uint32_t>& windowSize, const std::string& title,
                      bool imgui_multi_viewport) : App(windowSize,
                                                       title) {
@@ -34,6 +37,32 @@ void ProjectDS::end_frame_user() {
     }
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
+}
+
+void ProjectDS::load_config() {
+	std::ifstream file("projectds.cfg");
+    if (file.is_open()) {
+		std::string line;
+        while (std::getline(file, line)) {
+			int split = line.find_first_of('=');
+			std::string key = line.substr(0, split);
+			std::string value = line.substr(split + 1);
+			if (key == "path") {
+				data_path = value;
+			}
+        }
+        file.close();
+    }
+
+    if (!data_path.empty())
+        load_data_directory(data_path);
+}
+
+void ProjectDS::save_config() {
+    std::ofstream file;
+    file.open("projectds.cfg");
+    file << "path=" << data_path << std::endl;
+    file.close();
 }
 
 void ProjectDS::init_imgui() {

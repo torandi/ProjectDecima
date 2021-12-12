@@ -38,6 +38,7 @@ public:
 
     Decima::ArchiveManager archive_array;
     std::vector<const char*> file_names;
+    std::string data_path;
     FileTree root_tree;
     SelectionInfo selection_info;
     ImGuiTextFilter filter;
@@ -50,6 +51,10 @@ public:
     void init_imgui();
 
     void init_filetype_handlers();
+
+    void load_config();
+    void save_config();
+    void load_data_directory(const std::string& path);
 
     std::vector<Decima::Archive*> get_selected_archives();
 
@@ -64,6 +69,7 @@ protected:
     void draw_tree();
     void draw_export();
     void draw_archive_select();
+
 
     void begin_frame_user() override;
 

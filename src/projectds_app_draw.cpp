@@ -16,48 +16,8 @@ static void show_data_selection_dialog(ProjectDS& self) {
     auto folder = pfd::select_folder("Select Horizon Zero Dawn Packed_DX12 folder").result();
 
     if (!folder.empty()) {
-
-        // Sort bin files alphabeticaly
-        std::set<std::filesystem::path> sortedArchiveNames;
-        for (auto file : std::filesystem::directory_iterator(folder)) {
-            // ignore Aloy's adjustments, it's causing issues with the prefetch
-            if(file.path().stem() != "Patch_AloysAdjustments")
-                sortedArchiveNames.insert(file.path());
-        }
-
-        // Iterate in reverse alphabetical order
-        for (auto it = sortedArchiveNames.rbegin(); it != sortedArchiveNames.rend(); ++it) {
-            LOG("Loading archive ", it->stem());
-            int index = self.archive_array.load_archive(it->string());
-        }
-
-        self.archive_array.load_prefetch();
-
-        self.file_names.clear();
-        self.file_names.reserve(self.archive_array.hash_to_name.size());
-
-        std::thread([](ProjectDS& self) {
-            self.root_tree_constructing = true;
-
-            for (const auto& [hash, path] : self.archive_array.hash_to_name) {
-                self.file_names.push_back(path.c_str());
-
-                std::vector<std::string> split_path;
-                split(path, split_path, '/');
-
-                auto* current_root = &self.root_tree;
-
-                for (auto it = split_path.begin(); it != split_path.end() - 1; it++)
-                    current_root = current_root->add_folder(*it);
-
-                if (self.archive_array.hash_to_archive_index.find(hash) != self.archive_array.hash_to_archive_index.end())
-                    current_root->add_file(split_path.back(), hash, { 0 });
-            }
-
-            self.root_tree_constructing = false;
-        },
-            std::ref(self))
-            .detach();
+        self.load_data_directory(folder);
+        self.save_config();
     }
 }
 
@@ -108,6 +68,51 @@ static void add_selected_to_export (ProjectDS& self) {
 		self.archive_array.hash_to_name[file_hash] = filename;
 		self.selection_info.selected_files.insert(FileSelectionInfo(file_hash, -1));
 	}
+}
+
+void ProjectDS::load_data_directory(const std::string& path) {
+    data_path = path;
+	// Sort bin files alphabeticaly
+	std::set<std::filesystem::path> sortedArchiveNames;
+	for (auto file : std::filesystem::directory_iterator(path)) {
+		// ignore Aloy's adjustments, it's causing issues with the prefetch
+		if(file.path().stem() != "Patch_AloysAdjustments")
+			sortedArchiveNames.insert(file.path());
+	}
+
+	// Iterate in reverse alphabetical order
+	for (auto it = sortedArchiveNames.rbegin(); it != sortedArchiveNames.rend(); ++it) {
+		LOG("Loading archive ", it->stem());
+		int index = archive_array.load_archive(it->string());
+	}
+
+	archive_array.load_prefetch();
+
+	file_names.clear();
+	file_names.reserve(archive_array.hash_to_name.size());
+
+	std::thread([](ProjectDS& self) {
+		self.root_tree_constructing = true;
+
+		for (const auto& [hash, path] : self.archive_array.hash_to_name) {
+			self.file_names.push_back(path.c_str());
+
+			std::vector<std::string> split_path;
+			split(path, split_path, '/');
+
+			auto* current_root = &self.root_tree;
+
+			for (auto it = split_path.begin(); it != split_path.end() - 1; it++)
+				current_root = current_root->add_folder(*it);
+
+			if (self.archive_array.hash_to_archive_index.find(hash) != self.archive_array.hash_to_archive_index.end())
+				current_root->add_file(split_path.back(), hash, { 0 });
+		}
+
+		self.root_tree_constructing = false;
+	},
+	std::ref(*this))
+	.detach();
 }
 
 void ProjectDS::init_user() {
@@ -174,6 +179,7 @@ void ProjectDS::init_user() {
         [&] { add_selected_to_export(*this); },
     });
 
+    load_config();
 }
 
 void ProjectDS::input_user() {
