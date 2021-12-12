@@ -29,11 +29,6 @@ static void show_data_selection_dialog(ProjectDS& self) {
         for (auto it = sortedArchiveNames.rbegin(); it != sortedArchiveNames.rend(); ++it) {
             LOG("Loading archive ", it->stem());
             int index = self.archive_array.load_archive(it->string());
-
-            // export hack hack
-			//if (file.path().filename() == "Patch.bin") {
-				//self.filesToExport.push_back(index);
-			//}
         }
 
         self.archive_array.load_prefetch();
@@ -183,6 +178,22 @@ void ProjectDS::init_user() {
         GLFW_KEY_E,
         ImGuiKeyModFlags_Ctrl,
         [&] { show_export_selection_dialog(*this); },
+    });
+
+    shortcuts.push_back(ShortcutInfo {
+        "Ctrl+P",
+        "Expand all",
+        GLFW_KEY_P,
+        ImGuiKeyModFlags_Ctrl,
+        [&] { root_tree.expand_all(); },
+    });
+
+    shortcuts.push_back(ShortcutInfo {
+        "Ctrl+Shift+P",
+        "Collapse all",
+        GLFW_KEY_P,
+        ImGuiKeyModFlags_Ctrl | ImGuiKeyModFlags_Shift,
+        [&] { root_tree.collapse_all(); },
     });
 
     shortcuts.push_back(ShortcutInfo {
@@ -504,8 +515,6 @@ void ProjectDS::draw_tree() {
             }
         }
 
-        ImGui::SameLine();
-
         if (ImGui::SmallButton("Expand all")) {
             root_tree.expand_all();
         }
@@ -582,20 +591,24 @@ void ProjectDS::draw_archive_select() {
 void ProjectDS::draw_export() {
     ImGui::Begin("Export");
     {
-        if (ImGui::Button("Add file by name", { -1, 0 }))
+        if (ImGui::SmallButton("Add by name"))
             current_popup = Popup::AppendExportByName;
 
-        if (ImGui::Button("Add file by hash", { -1, 0 }))
+        ImGui::SameLine();
+
+        if (ImGui::SmallButton("Add by hash"))
             current_popup = Popup::AppendExportByHash;
+
+        ImGui::SameLine();
+
+        if (ImGui::SmallButton("Clear"))
+            selection_info.selected_files.clear();
 
         if (ImGui::Button("Export selected items", { -1, 0 }))
             show_export_selection_dialog(*this);
 
         if (ImGui::PushItemWidth(-1), ImGui::ListBoxHeader("##", { 0, -1 })) {
             for (const auto& selected_file : selection_info.selected_files) {
-
-
-
                 std::string archive_name = "";
                 
                 if (selected_file.archive_index != -1) {
